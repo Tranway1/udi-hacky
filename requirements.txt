@@ -1,0 +1,5 @@
+pydicom
+udi-grammar-py
+lzstring
+playwright
+ipython 
