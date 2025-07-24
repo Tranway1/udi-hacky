@@ -7,16 +7,19 @@ DICOM_DIR = '/Users/chunwei/research/midrc-demo/downloads'
 OUTPUT_CSV = 'dicom_metadata.csv'
 
 def extract_dicom_metadata(directory, output_csv, max_files=None):
-    # Get all .dcm files
-    all_files = [f for f in os.listdir(directory) if f.lower().endswith('.dcm')]
+    # Recursively get all .dcm files
+    all_files = []
+    for root, _, files in os.walk(directory):
+        for f in files:
+            if f.lower().endswith('.dcm'):
+                all_files.append(os.path.join(root, f))
     selected_files = all_files if max_files is None else all_files[:max_files]
 
     metadata_list = []
     all_keys = set()
 
-    # Read metadata from each file
-    for filename in selected_files:
-        filepath = os.path.join(directory, filename)
+    for filepath in selected_files:
+        filename = os.path.relpath(filepath, directory)
         try:
             ds = pydicom.dcmread(filepath, stop_before_pixels=True)
             meta = {elem.keyword: elem.value for elem in ds.iterall() if elem.keyword}
@@ -26,11 +29,9 @@ def extract_dicom_metadata(directory, output_csv, max_files=None):
         except Exception as e:
             print(f"Error reading {filename}: {e}")
 
-    # Ensure __filename is the first column
     all_keys = sorted(k for k in all_keys if k != '__filename')
     fieldnames = ['__filename'] + all_keys
 
-    # Write to CSV
     with open(output_csv, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -41,16 +42,17 @@ def extract_dicom_metadata(directory, output_csv, max_files=None):
     return output_csv
 
 def extract_selected_dicom_metadata(directory, output_csv, attributes, max_files=None):
-    """
-    Extract only selected attributes from DICOM files and write to CSV.
-    attributes: list of DICOM attribute keywords (e.g., ['PatientID', 'Modality'])
-    """
-    all_files = [f for f in os.listdir(directory) if f.lower().endswith('.dcm')]
+    # Recursively get all .dcm files
+    all_files = []
+    for root, _, files in os.walk(directory):
+        for f in files:
+            if f.lower().endswith('.dcm'):
+                all_files.append(os.path.join(root, f))
     selected_files = all_files if max_files is None else all_files[:max_files]
 
     metadata_list = []
-    for filename in selected_files:
-        filepath = os.path.join(directory, filename)
+    for filepath in selected_files:
+        filename = os.path.relpath(filepath, directory)
         try:
             ds = pydicom.dcmread(filepath, stop_before_pixels=True)
             meta = {'__filename': filename}
